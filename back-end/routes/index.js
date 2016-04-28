@@ -97,6 +97,7 @@ router.get('/search', function(req, res, next) {
                     }
                 });
             }
+            console.log(responseData);
             res.json(responseData);
         });
         response.on('error', function() {
