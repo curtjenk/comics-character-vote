@@ -23,16 +23,6 @@ var mongoUrl = process.env.MONGODB_URI ||
     process.env.MONGOHQ_URL ||
     'mongodb://localhost:27017/comicsBattle';
 
-//models
-// var studentUrl = process.env.MONGODB_URI ||
-//     process.env.MONGOHQ_URL ||
-//     'mongodb://localhost:27017/btb';
-// var Student = require('../models/students');
-// Student.find({}, function(error, document) {
-//   console.log(document);
-// });
-
-
 var db;
 mongoClient.connect(mongoUrl, function(error, database) {
     db = database;
@@ -69,7 +59,7 @@ router.post('/vote', function(req, res, next) {
 });
 router.get('/search', function(req, res, next) {
     var totalMarvelCharacters = 1485;
-    var offset = Math.floor(Math.random() * 1001);
+    var offset = Math.floor(Math.random() * 74);
     var ts = Math.floor(Math.random() * 100000);
     var hash = md5(ts + marvelPrivateKey + marvelApiKey);
     // console.log(ts);
@@ -90,6 +80,7 @@ router.get('/search', function(req, res, next) {
             var responseData = [];
             if (!parsed || !parsed.data) {
                responseData = [{name: " NO Data Found"}];
+               console.log(responseData);
             } else {
                 parsed.data.results.forEach(function(val) {
 
