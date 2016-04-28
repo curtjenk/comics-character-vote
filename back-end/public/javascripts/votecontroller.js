@@ -1,6 +1,7 @@
 var votingApp = angular.module('votingApp', []);
 votingApp.controller('voteController', function($scope, $http){
-  var host = "http://localhost:3100";
+  // var host = "http://localhost:3100";
+  var host = "http://www.curtisjenkins.net:3100";
 	var URL =  host + "/search";
 	var voteUrl = host + "/vote";
 
