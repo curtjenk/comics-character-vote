@@ -16,20 +16,46 @@ var marvelApiKey = config.marvel.apiKey;
 var marvelPrivateKey = config.marvel.privateKey;
 var marvelHost = "gateway.marvel.com";
 
+var mongoClient = require('mongodb').MongoClient;
+//setup to accomdate running on Heroku
+var mongoUrl = process.env.MONGODB_URI ||
+    process.env.MONGOHQ_URL ||
+    'mongodb://localhost:27017/comicsBattle';
+var db;
+mongoClient.connect(mongoUrl, function(error, database) {
+  db = database;
+});
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.post('/vote', function(req, res, next) {
+   var currIP = req.ip;
+   var winner = req.body.winner;
+   var loser = req.body.loser;
+   console.log("****************");
+   console.log("Winner = " + winner.id + ' ' + winner.name);
+   console.log("Loser = " + loser.id + ' ' + loser.name);
+   console.log("****************");
+   var col = db.collection('vote');
+   col.insertOne({userIp:currIP, winner: winner, loser: loser}, function(err, result) {
+      console.log(err);
+      console.log(result);
+      console.log("Inserted a document into the vote collection.");
+  });
+   res.json({status: 'Made It'});
+});
 router.get('/search', function(req, res, next) {
   var totalMarvelCharacters = 1485;
   var offset = Math.floor(Math.random() * 1001);
   var ts = Math.floor(Math.random() * 100000);
   var hash = md5(ts+marvelPrivateKey+marvelApiKey);
-  console.log(ts);
+  // console.log(ts);
   // res.json({dateTime: ts});
   var marvelPath = "/v1/public/characters?" + encodeURI("ts="+ts+"&apikey=" + marvelApiKey + "&hash=" + hash + "&offset=" + offset);
- console.log(marvelHost + marvelPath);
+  console.log(marvelHost + marvelPath);
   http.get({
          host: marvelHost,
          path: marvelPath
@@ -57,12 +83,11 @@ router.get('/search', function(req, res, next) {
                 }
             });
             res.json(responseData);
-        });
-        response.on('error', function() {
-          console.log("error");
-        });
+         });
+         response.on('error', function() {
+           console.log("error");
+         });
     });
-
 });
 
 module.exports = router;
