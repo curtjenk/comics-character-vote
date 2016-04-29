@@ -1,7 +1,8 @@
 var Mongoose = require('mongoose');
 var Schema = Mongoose.Schema;
 var Character = new Schema({
-  id: String,
+  source: String,
+  cid: String,
   name: String,
   description: String,
   thumbnail: String

@@ -4,13 +4,15 @@ var Vote = new Schema(
   {
     userIP: String,
     winner: {
-        id: String,
+        source: String,
+        cid: String,
         name: String,
         description: String,
         thumbnail: String
     },
     loser: {
-        id: String,
+        source: String,
+        cid: String,
         name: String,
         description: String,
         thumbnail: String

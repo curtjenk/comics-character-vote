@@ -11,6 +11,39 @@ config.marvel.apiKey = {your api key}
 config.marvel.privateKey = {your private key}
 module.exports = config;
 */
+var fs = require('fs');
+var multer = require('multer'); //node middleware primarily used for uploading files
+var upload = multer({
+    dest: 'upload' //establish the upload directory
+});
+var type = upload.single('file');
+router.post('/upload', type, function(req, res, next) {
+    console.log(req.file);
+    console.log(req.file);
+    //multer automatically stores the file in the upload directory with a random file name!
+    // res.json(req.file);
+    var targetPath = 'public/images/user-uploads/' + req.file.originalname;
+    // res.json(target_path);
+    // Now copy the file to the images/user-uploads directory
+    fs.readFile(req.file.path, function(error, data) {
+        fs.writeFile(targetPath, data, function(error) {
+            if (!error) {
+                fs.unlink(req.file.path, function(err) {
+                    if (err) {
+                        console.log("Error deleting temp upload file = " + req.file.path);
+                    }
+                });
+            }
+            if (error) {
+
+                res.json("Error copying the file: " + error);
+            } else {
+                res.json('Success');
+            }
+        });
+    });
+
+});
 
 var marvelApiKey = config.marvel.apiKey;
 var marvelPrivateKey = config.marvel.privateKey;
@@ -51,28 +84,25 @@ router.get('/clearcache', function(req, res, next) {
 
 router.get('/showcache', function(req, res, next) {
     Character.find({}, function(error, document) {
-        console.log(document);
+        // console.log(document);
         res.json(document);
     });
 });
 //get all the characters and save to mongo
-router.get('/cache', function(req, res, next) {
+router.get('/updatecache', function(req, res, next) {
     var totalMarvelCharacters = 1485;
     var limit = 10;
     var offset = 0;
+    // var maxIterations = 1;
     var maxIterations = Math.floor(totalMarvelCharacters / limit) + 1;
-    console.log("Max iterations = " + maxIterations);
+    // console.log("Max iterations = " + maxIterations);
     //-------------------
     var successCallBack = function(data) {
         for (var d = 0; d < data.length; d++) {
-            var character = new Character();
-            character.id = data[d].id;
-            character.name = data[d].name;
-            character.description = data[d].description;
-            character.thumbnail = data[d].thumbnail;
-            character.save();
+            addNew(data[d]);
         }
     };
+
 
     var errorCallBack = function(error) {
         console.log(error);
@@ -117,36 +147,38 @@ router.post('/vote', function(req, res, next) {
     });
 });
 
-
 router.get('/search', function(req, res, next) {
-    // var responseData = [];
-    // responseData.push({
-    //     id: val.id,
-    //     name: val.name,
-    //     description: val.description,
-    //     thumbnail: val.thumbnail.path + '.' + val.thumbnail.extension
-    // });
-    //   Character.find({}, function(error, document) {
-    //       console.log(document);
-    //       res.json(document);
-    //   });
-
-    // var offset = Math.floor(Math.random() * 74);
-    // var limit = 20;
-    // var successCallBack = function(data) {
-    //     res.json(data);
-    // };
-    //
-    // var errorCallBack = function(error) {
-    //     console.log(error);
-    //     res.json({
-    //         status: 'error'
-    //     });
-    // };
-    //
-    // marvelSearch(limit, offset, successCallBack, errorCallBack);
-
+    Character.find({}, function(error, results) {
+        res.json(results);
+    });
 });
+//Check if we already have the character in mongo.
+//if we don't then add it.
+function addNew(mc) {
+    // console.log(mc);
+    Character.findOne({
+        cid: mc.cid,
+        source: mc.source
+    }, function(err, char) {
+        if (err) {
+            console.log("Error looking up the charcter");
+        } else {
+            if (!char) {
+                console.log("Found a new Marvel character " + mc.name);
+                var character = new Character();
+                character.source = 'marvel';
+                character.cid = mc.cid;
+                character.name = mc.name;
+                character.description = mc.description;
+                character.thumbnail = mc.thumbnail;
+                character.save();
+            } else {
+                console.log("Already have " + mc.name);
+
+            }
+        }
+    });
+}
 
 function parseResults(data) {
     var responseData = [];
@@ -154,7 +186,8 @@ function parseResults(data) {
     data.results.forEach(function(val) {
         if (val.thumbnail.path.indexOf('image_not_available') === -1) {
             responseData.push({
-                id: val.id,
+                source: 'marvel',
+                cid: val.id,
                 name: val.name,
                 description: val.description,
                 thumbnail: val.thumbnail.path + '.' + val.thumbnail.extension
@@ -172,7 +205,7 @@ function marvelSearch(limit, offset, successCallBack, errorCallBack) {
     var ts = Math.floor(Math.random() * 100000);
     var hash = md5(ts + marvelPrivateKey + marvelApiKey);
     var marvelPath = "/v1/public/characters?" + encodeURI("ts=" + ts + "&apikey=" + marvelApiKey + "&hash=" + hash + "&offset=" + _offset + "&limit=" + _limit);
-    console.log(marvelHost + marvelPath);
+    // console.log(marvelHost + marvelPath);
     http.get({
         host: marvelHost,
         path: marvelPath
